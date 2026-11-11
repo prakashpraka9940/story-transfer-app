@@ -277,74 +277,59 @@
       proceedBtn.innerText = 'Connecting & Scraping...';
       statusBox.className = 'status-box status-info';
       statusBox.style.display = 'block';
-      statusBox.innerText = `Connecting to ${sourceUrl} via proxy scraper...`;
+      statusBox.innerText = 'Fetching posts via internal Vercel API...';
       postSection.style.display = 'none';
 
       try {
-        // Free proxy service use panni source site HTML edukkurom
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(sourceUrl)}`;
-        const response = await fetch(proxyUrl);
+        const apiUrl = `/api/get-posts?url=${encodeURIComponent(sourceUrl)}`;
+        const response = await fetch(apiUrl);
         
         if (!response.ok) {
-          throw new Error('Proxy connection failed');
+          throw new Error('Server request failed with status: ' + response.status);
         }
 
         const data = await response.json();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(data.contents, 'text/html');
 
-        // WordPress / Blog posts selectors
-        let postNodes = doc.querySelectorAll('article, .post, .entry-title a, h2.entry-title a, h2 a');
-        fetchedStories = [];
+        if (data.posts && data.posts.length > 0) {
+          fetchedStories = data.posts;
+        } else if (data.rawHtml) {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(data.rawHtml, 'text/html');
+          const postNodes = doc.querySelectorAll('article, .post, .entry-title a, h2 a, h3 a');
+          fetchedStories = [];
+          let seen = new Set();
+          let count = 1;
 
-        let seenTitles = new Set();
-        let counter = 1;
+          postNodes.forEach((node) => {
+            const linkElem = node.tagName.toLowerCase() === 'a' ? node : node.querySelector('a');
+            const title = linkElem ? linkElem.innerText.trim() : node.innerText.trim();
+            const link = linkElem ? linkElem.getAttribute('href') : '';
 
-        postNodes.forEach((node) => {
-          let title = '';
-          let link = '';
-          let category = 'Story';
-
-          if (node.tagName.toLowerCase() === 'a') {
-            title = node.innerText.trim();
-            link = node.getAttribute('href') || '';
-          } else {
-            const linkElem = node.querySelector('h2 a, h1 a, a');
-            if (linkElem) {
-              title = linkElem.innerText.trim();
-              link = linkElem.getAttribute('href') || '';
-            } else {
-              title = node.innerText.trim();
+            if (title && title.length > 5 && !seen.has(title)) {
+              seen.add(title);
+              fetchedStories.push({
+                id: count++,
+                title: title,
+                link: link,
+                category: 'Story'
+              });
             }
+          });
+        }
 
-            const catElem = node.querySelector('.cat-links, .category, .post-category');
-            if (catElem) category = catElem.innerText.trim();
-          }
-
-          if (title && title.length > 5 && !seenTitles.has(title)) {
-            seenTitles.add(title);
-            fetchedStories.push({
-              id: counter++,
-              title: title,
-              link: link,
-              category: category
-            });
-          }
-        });
-
-        if (fetchedStories.length === 0) {
-          throw new Error('Posts parse aagavillai. Source site protection irukkalaam.');
+        if (!fetchedStories || fetchedStories.length === 0) {
+          throw new Error('No stories found on the source page');
         }
 
         renderPosts(fetchedStories);
         document.getElementById('postCount').innerText = fetchedStories.length;
         statusBox.className = 'status-box status-success';
-        statusBox.innerText = `Success! ${fetchedStories.length} real posts source site-la irunthu kidaithathu.`;
+        statusBox.innerText = `Success! ${fetchedStories.length} posts retrieved successfully.`;
         postSection.style.display = 'block';
 
       } catch (err) {
         statusBox.className = 'status-box status-error';
-        statusBox.innerText = `Error: ${err.message}. Source site direct scraper-ah block pannirukku.`;
+        statusBox.innerText = `Error: ${err.message}.`;
       } finally {
         proceedBtn.disabled = false;
         proceedBtn.innerText = 'Proceed & Fetch Real Posts';
@@ -402,7 +387,6 @@
       statusBox.innerText = `Publishing ${storiesToPublish.length} stories to ${destUrl}...`;
 
       try {
-        // Destination Vercel API-kku POST request anupuvatharkana logic
         const response = await fetch(`${destUrl.replace(/\/$/, '')}/api/posts`, {
           method: 'POST',
           headers: {
