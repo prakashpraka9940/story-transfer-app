@@ -269,7 +269,7 @@
 
       <div class="post-list" id="postList"></div>
 
-      <button type="button" id="publishBtn" onclick="publishSelectedPosts()">Publish Instant Live to Public</button>
+      <button type="button" id="publishBtn" onclick="publishSelectedPosts()">Publish Instant Live & Fix Home Feed</button>
     </div>
   </div>
 
@@ -290,57 +290,14 @@
 
     let fetchedStories = [];
 
-    // Helper: Generate First-Letter Dark AI Canvas Poster
-    function generateLetterArtCover(title) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 600;
-      canvas.height = 400;
-      const ctx = canvas.getContext('2d');
-
-      const bgGradients = [
-        ['#1e1b4b', '#0f172a', '#431407'],
-        ['#022c22', '#0f172a', '#134e4a'],
-        ['#311042', '#0f172a', '#581c87'],
-        ['#450a0a', '#0f172a', '#1c1917']
-      ];
-      const selectedTheme = bgGradients[Math.floor(Math.random() * bgGradients.length)];
-
-      const grad = ctx.createLinearGradient(0, 0, 600, 400);
-      grad.addColorStop(0, selectedTheme[0]);
-      grad.addColorStop(0.5, selectedTheme[1]);
-      grad.addColorStop(1, selectedTheme[2]);
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 600, 400);
-
-      const radGrad = ctx.createRadialGradient(300, 200, 50, 300, 200, 300);
-      radGrad.addColorStop(0, 'rgba(0,0,0,0)');
-      radGrad.addColorStop(1, 'rgba(0,0,0,0.7)');
-      ctx.fillStyle = radGrad;
-      ctx.fillRect(0, 0, 600, 400);
-
-      const cleanTitle = title.trim();
-      const firstChar = cleanTitle.charAt(0) || 'D';
-
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = 'bold 150px sans-serif';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-      ctx.shadowColor = '#e11d48';
-      ctx.shadowBlur = 25;
-      ctx.fillText(firstChar, 300, 170);
-
-      ctx.shadowBlur = 0;
-      ctx.font = 'bold 22px sans-serif';
-      ctx.fillStyle = '#f8fafc';
-      let displayTitle = cleanTitle.length > 32 ? cleanTitle.substring(0, 30) + '...' : cleanTitle;
-      ctx.fillText(displayTitle, 300, 320);
-
-      ctx.font = '12px sans-serif';
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillText('DARK TAMIL WORLD', 300, 360);
-
-      return canvas.toDataURL('image/jpeg', 0.85);
-    }
+    // Light-weight high-speed direct CDN posters (No heavy Base64)
+    const cdnCovers = [
+      "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=800&q=80"
+    ];
 
     async function fetchSourcePosts() {
       const sourceUrl = document.getElementById('sourceUrl').value.trim();
@@ -357,7 +314,7 @@
       proceedBtn.innerText = 'Connecting & Scraping...';
       statusBox.className = 'status-box status-info';
       statusBox.style.display = 'block';
-      statusBox.innerText = 'Fetching stories from source website...';
+      statusBox.innerText = 'Fetching stories from source...';
       postSection.style.display = 'none';
 
       try {
@@ -375,13 +332,13 @@
         }
 
         if (!fetchedStories || fetchedStories.length === 0) {
-          throw new Error('No stories found on the source page');
+          throw new Error('No stories found');
         }
 
         renderPosts(fetchedStories);
         document.getElementById('postCount').innerText = fetchedStories.length;
         statusBox.className = 'status-box status-success';
-        statusBox.innerText = `Success! ${fetchedStories.length} posts retrieved. Choose stories to publish live.`;
+        statusBox.innerText = `Success! ${fetchedStories.length} posts retrieved.`;
         postSection.style.display = 'block';
 
       } catch (err) {
@@ -450,48 +407,53 @@
         statusBox.innerText = `[${i + 1}/${storiesToPublish.length}] Dark Tamil World-ல் லைவ் செய்கிறது: ${story.title}...`;
 
         try {
-          let storyContent = story.content || '';
+          let rawStoryContent = story.content || '';
 
-          if (!storyContent || storyContent.length < 50) {
+          if (!rawStoryContent || rawStoryContent.length < 50) {
             const singleRes = await fetch(`/api/get-posts?url=${encodeURIComponent(story.link)}`);
             if (singleRes.ok) {
               const singleData = await singleRes.json();
               if (singleData.rawHtml) {
                 const doc = new DOMParser().parseFromString(singleData.rawHtml, 'text/html');
                 const contentElem = doc.querySelector('.entry-content, article .content, .post-content');
-                if (contentElem) storyContent = contentElem.innerHTML;
+                if (contentElem) rawStoryContent = contentElem.innerHTML;
               }
             }
           }
 
-          if (!storyContent) {
-            storyContent = `<p>${story.title}</p>`;
+          if (!rawStoryContent) {
+            rawStoryContent = `<p>${story.title}</p>`;
           }
 
-          // Category auto-detection
-          let finalCategory = story.category && story.category !== 'Story' ? story.category.trim() : 'காம கதைகள்';
+          // Format paragraph tags safely for the reader
+          let formattedContent = rawStoryContent
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "");
 
-          // First-letter AI Canvas cover image
-          const generatedCover = generateLetterArtCover(story.title);
+          let finalCategory = story.category && story.category !== 'Story' ? story.category.trim() : 'காம கதைகள்';
+          let coverUrl = cdnCovers[i % cdnCovers.length];
 
           const newDocId = 'dtw_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
           const todayDate = new Date().toLocaleDateString('ta-IN', { year: 'numeric', month: 'short', day: 'numeric' });
 
-          // 100% Instant Public Live Flags
+          // Complete multi-format schema compatible with DTW Reader & Grid
           const postData = {
             id: newDocId,
             title: story.title,
             subtitle: story.title,
-            content: storyContent,
+            content: formattedContent,
+            body: formattedContent,
+            pages: [formattedContent], // Reader view compatibility
             category: finalCategory,
-            coverImage: generatedCover,
-            images: [generatedCover],
+            coverImage: coverUrl,
+            images: [coverUrl],
             author: 'Prakash',
             authorRole: 'Admin',
             tags: `${finalCategory}, Tamil, Story`,
             date: todayDate,
             views: 1,
             likes: 0,
+            readTime: '5 min',
             status: 'published',
             approved: true,
             published: true,
@@ -500,21 +462,16 @@
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
           };
 
-          // Save to 'posts' (Homepage Feed)
+          // Primary and secondary collections
           await db.collection('posts').doc(newDocId).set(postData);
-
-          // Save to 'stories' (Reader Mode Feed)
           await db.collection('stories').doc(newDocId).set(postData);
 
-          // Category Auto-Registry
           try {
             await db.collection('categories').doc(finalCategory).set({
               name: finalCategory,
               updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
-          } catch(catErr) {
-            console.log('Category auto-registered');
-          }
+          } catch(e) {}
 
           successCount++;
         } catch (e) {
@@ -525,13 +482,13 @@
       publishBtn.disabled = false;
       if (successCount > 0) {
         statusBox.className = 'status-box status-success';
-        statusBox.innerText = `வெற்றி! ${successCount} கதைகள் பப்ளிக் விசிட்டர்ஸுக்கு நேரடியாக உடனே லைவ் ஆகிவிட்டன!`;
+        statusBox.innerText = `வெற்றி! ${successCount} கதைகள் ரீடர் மற்றும் முகப்புப் பக்கத்தில் இயங்கும் வகையில் லைவ் ஆகிவிட்டன!`;
         document.querySelectorAll('.post-checkbox').forEach(cb => cb.checked = false);
         const selectAll = document.getElementById('selectAll');
         if (selectAll) selectAll.checked = false;
       } else {
         statusBox.className = 'status-box status-error';
-        statusBox.innerText = `லைவ் செய்ய முடியவில்லை. Firestore அனுமதிகளைச் சரிபார்க்கவும்.`;
+        statusBox.innerText = `லைவ் செய்ய முடியவில்லை.`;
       }
     }
   </script>
