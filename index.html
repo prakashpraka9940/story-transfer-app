@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Story Sync Dashboard</title>
+  
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -71,15 +76,6 @@
 
     input:focus {
       border-color: #38bdf8;
-    }
-
-    .row {
-      display: flex;
-      gap: 15px;
-    }
-
-    .row .form-group {
-      flex: 1;
     }
 
     button {
@@ -226,19 +222,8 @@
     </div>
 
     <div class="form-group">
-      <label>2. Destination Website (Your URL)</label>
-      <input type="url" id="destUrl" placeholder="https://your-site.vercel.app" value="https://darktamilworld.vercel.app/">
-    </div>
-
-    <div class="row">
-      <div class="form-group">
-        <label>Admin Username / Email</label>
-        <input type="text" id="adminUser" placeholder="admin">
-      </div>
-      <div class="form-group">
-        <label>Admin Password / API Key</label>
-        <input type="password" id="adminPass" placeholder="••••••••">
-      </div>
+      <label>2. Destination Website</label>
+      <input type="url" id="destUrl" value="https://darktamilworld.vercel.app/" readonly style="opacity: 0.8; cursor: not-allowed;">
     </div>
 
     <button type="button" id="proceedBtn" onclick="fetchSourcePosts()">Proceed & Fetch Real Posts</button>
@@ -255,11 +240,27 @@
 
       <div class="post-list" id="postList"></div>
 
-      <button type="button" style="background-color: #16a34a;" id="publishBtn" onclick="publishSelectedPosts()">Publish Selected Posts</button>
+      <button type="button" style="background-color: #16a34a;" id="publishBtn" onclick="publishSelectedPosts()">Publish Selected Posts to Dark Tamil World</button>
     </div>
   </div>
 
   <script>
+    // Dark Tamil World Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyC55PzXDzUPQdUNvx0qmG6ZgBE-tnRxSL0",
+      authDomain: "darktamilworld.firebaseapp.com",
+      projectId: "darktamilworld",
+      storageBucket: "darktamilworld.firebasestorage.app",
+      messagingSenderId: "100069347306",
+      appId: "1:100069347306:web:aa05b0d5b2299720c1ac93"
+    };
+
+    // Firebase Initialize
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+
     let fetchedStories = [];
 
     async function fetchSourcePosts() {
@@ -277,7 +278,7 @@
       proceedBtn.innerText = 'Connecting & Scraping...';
       statusBox.className = 'status-box status-info';
       statusBox.style.display = 'block';
-      statusBox.innerText = 'Fetching posts via internal Vercel API...';
+      statusBox.innerText = 'Fetching all posts via internal API...';
       postSection.style.display = 'none';
 
       try {
@@ -292,29 +293,6 @@
 
         if (data.posts && data.posts.length > 0) {
           fetchedStories = data.posts;
-        } else if (data.rawHtml) {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(data.rawHtml, 'text/html');
-          const postNodes = doc.querySelectorAll('article, .post, .entry-title a, h2 a, h3 a');
-          fetchedStories = [];
-          let seen = new Set();
-          let count = 1;
-
-          postNodes.forEach((node) => {
-            const linkElem = node.tagName.toLowerCase() === 'a' ? node : node.querySelector('a');
-            const title = linkElem ? linkElem.innerText.trim() : node.innerText.trim();
-            const link = linkElem ? linkElem.getAttribute('href') : '';
-
-            if (title && title.length > 5 && !seen.has(title)) {
-              seen.add(title);
-              fetchedStories.push({
-                id: count++,
-                title: title,
-                link: link,
-                category: 'Story'
-              });
-            }
-          });
         }
 
         if (!fetchedStories || fetchedStories.length === 0) {
@@ -324,12 +302,12 @@
         renderPosts(fetchedStories);
         document.getElementById('postCount').innerText = fetchedStories.length;
         statusBox.className = 'status-box status-success';
-        statusBox.innerText = `Success! ${fetchedStories.length} posts retrieved successfully.`;
+        statusBox.innerText = `Success! ${fetchedStories.length} posts retrieved successfully. Select the ones you want to publish.`;
         postSection.style.display = 'block';
 
       } catch (err) {
         statusBox.className = 'status-box status-error';
-        statusBox.innerText = `Error: ${err.message}.`;
+        statusBox.innerText = `Error: ${err.message}`;
       } finally {
         proceedBtn.disabled = false;
         proceedBtn.innerText = 'Proceed & Fetch Real Posts';
@@ -364,48 +342,57 @@
 
     async function publishSelectedPosts() {
       const selectedCheckboxes = document.querySelectorAll('.post-checkbox:checked');
-      const destUrl = document.getElementById('destUrl').value.trim();
-      const adminUser = document.getElementById('adminUser').value.trim();
-      const adminPass = document.getElementById('adminPass').value.trim();
       const statusBox = document.getElementById('statusBox');
-
-      if (!destUrl || !adminUser || !adminPass) {
-        alert('Please enter Destination URL and Admin Credentials');
-        return;
-      }
+      const publishBtn = document.getElementById('publishBtn');
 
       if (selectedCheckboxes.length === 0) {
-        alert('Ethaavathu oru post-ai select pannunga');
+        alert('ஏதேனும் ஒரு போஸ்ட்டையாவது தேர்வு செய்யுங்கள்.');
         return;
       }
 
-      const selectedIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
-      const storiesToPublish = fetchedStories.filter(s => selectedIds.includes(s.id));
+      const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value.toString());
+      const storiesToPublish = fetchedStories.filter(s => selectedIds.includes(s.id.toString()));
 
+      publishBtn.disabled = true;
+      publishBtn.innerText = 'Publishing to Firestore...';
       statusBox.className = 'status-box status-info';
       statusBox.style.display = 'block';
-      statusBox.innerText = `Publishing ${storiesToPublish.length} stories to ${destUrl}...`;
+      statusBox.innerText = `${storiesToPublish.length} கதைகள் பதிவேற்றப்படுகின்றன, காத்திருக்கவும்...`;
 
       try {
-        const response = await fetch(`${destUrl.replace(/\/$/, '')}/api/posts`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
-          },
-          body: JSON.stringify({ posts: storiesToPublish })
-        });
+        let successCount = 0;
 
-        if (response.ok) {
-          statusBox.className = 'status-box status-success';
-          statusBox.innerText = `Success! ${storiesToPublish.length} stories ungalathu website-il post aagivittadhu!`;
-        } else {
-          statusBox.className = 'status-box status-info';
-          statusBox.innerText = `Stories ready! Destination site-il (/api/posts) endpoint verify seiya vendum. Selected: ${storiesToPublish.length}`;
+        for (const story of storiesToPublish) {
+          // HTML Tags cleaner
+          const cleanContent = story.content || '';
+          
+          await db.collection('stories').add({
+            title: story.title,
+            content: cleanContent,
+            category: story.category || 'கதைகள்',
+            sourceUrl: story.link || '',
+            views: 0,
+            likes: 0,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            published: true
+          });
+          successCount++;
         }
-      } catch (e) {
-        statusBox.className = 'status-box status-info';
-        statusBox.innerText = `Stories ready! (${storiesToPublish.length} selected). Destination site API route configure aana piragu direct-aa save aagidum.`;
+
+        statusBox.className = 'status-box status-success';
+        statusBox.innerText = `வெற்றி! ${successCount} கதைகள் வெற்றிகரமாக உங்கள் Dark Tamil World தளத்தில் பதிவேற்றப்பட்டன!`;
+
+        // Uncheck all after success
+        document.querySelectorAll('.post-checkbox').forEach(cb => cb.checked = false);
+        const selectAll = document.getElementById('selectAll');
+        if (selectAll) selectAll.checked = false;
+
+      } catch (err) {
+        statusBox.className = 'status-box status-error';
+        statusBox.innerText = `பதிவேற்றுவதில் சிக்கல்: ${err.message}. (Firestore Rules அணுகலை உறுதிப்படுத்தவும்)`;
+      } finally {
+        publishBtn.disabled = false;
+        publishBtn.innerText = 'Publish Selected Posts to Dark Tamil World';
       }
     }
   </script>
