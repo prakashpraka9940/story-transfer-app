@@ -62,7 +62,8 @@
 
     input[type="text"],
     input[type="url"],
-    input[type="password"] {
+    input[type="password"],
+    select {
       width: 100%;
       padding: 12px 14px;
       background-color: #0f172a;
@@ -74,7 +75,7 @@
       transition: border-color 0.2s;
     }
 
-    input:focus {
+    input:focus, select:focus {
       border-color: #38bdf8;
     }
 
@@ -231,18 +232,23 @@
     </div>
 
     <div class="form-group">
-      <label>2. Destination Website</label>
-      <input type="url" id="destUrl" value="https://darktamilworld.vercel.app/" readonly style="opacity: 0.85; cursor: not-allowed;">
+      <label>2. Destination Category (Dark Tamil World)</label>
+      <select id="storyCategory">
+        <option value="காம கதைகள்">காம கதைகள்</option>
+        <option value="Pottachi Story">Pottachi Story</option>
+        <option value="Cuckold கதைகள்">Cuckold கதைகள்</option>
+        <option value="அம்மா மகன் Memes">அம்மா மகன் Memes</option>
+      </select>
     </div>
 
     <div class="row">
       <div class="form-group">
         <label>Admin Username</label>
-        <input type="text" id="adminUser" placeholder="Enter username">
+        <input type="text" id="adminUser" placeholder="Prakash">
       </div>
       <div class="form-group">
         <label>Admin Password</label>
-        <input type="password" id="adminPass" placeholder="Enter password">
+        <input type="password" id="adminPass" placeholder="••••••••">
       </div>
     </div>
 
@@ -265,7 +271,7 @@
   </div>
 
   <script>
-    // Firebase Configuration for Dark Tamil World
+    // Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyC55PzXDzUPQdUNvx0qmG6ZgBE-tnRxSL0",
       authDomain: "darktamilworld.firebaseapp.com",
@@ -281,6 +287,14 @@
     const db = firebase.firestore();
 
     let fetchedStories = [];
+
+    // Default thumbnails for stories
+    const sampleImages = [
+      "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80"
+    ];
 
     async function fetchSourcePosts() {
       const sourceUrl = document.getElementById('sourceUrl').value.trim();
@@ -362,10 +376,11 @@
     async function publishSelectedPosts() {
       const adminUser = document.getElementById('adminUser').value.trim();
       const adminPass = document.getElementById('adminPass').value.trim();
+      const selectedCategory = document.getElementById('storyCategory').value;
       const statusBox = document.getElementById('statusBox');
       const publishBtn = document.getElementById('publishBtn');
 
-      // Admin Authentication Check
+      // Admin verification
       if (adminUser !== "Prakash" || adminPass !== "Prakash9940@") {
         alert("தவறான Admin Username அல்லது Password! சரியான விவரங்களை உள்ளிடவும்.");
         return;
@@ -388,12 +403,12 @@
 
       for (let i = 0; i < storiesToPublish.length; i++) {
         const story = storiesToPublish[i];
-        statusBox.innerText = `[${i + 1}/${storiesToPublish.length}] கதையை Dark Tamil World-ல் பதிவேற்றுகிறது: ${story.title}...`;
+        statusBox.innerText = `[${i + 1}/${storiesToPublish.length}] Dark Tamil World-ல் பதிவேற்றுகிறது: ${story.title}...`;
 
         try {
-          let storyContent = story.content;
+          let storyContent = story.content || '';
 
-          // If content not present in list API, fetch the single post details
+          // If content is empty or short, fetch full content
           if (!storyContent || storyContent.length < 50) {
             const singleRes = await fetch(`/api/get-posts?url=${encodeURIComponent(story.link)}`);
             if (singleRes.ok) {
@@ -406,22 +421,34 @@
             }
           }
 
-          // Clean fallback content if still empty
           if (!storyContent) {
             storyContent = `<p>${story.title}</p>`;
           }
 
-          // Direct add to Dark Tamil World's Firestore collection
-          await db.collection('stories').add({
+          // Pick an image
+          const randomImage = sampleImages[i % sampleImages.length];
+          const newDocId = 'dtw_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+          const todayDate = new Date().toLocaleDateString('ta-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+
+          const postData = {
+            id: newDocId,
             title: story.title,
             content: storyContent,
-            category: 'குடும்ப கதைகள்',
-            sourceUrl: story.link || '',
+            category: selectedCategory,
+            coverImage: story.image || randomImage,
+            images: [story.image || randomImage],
+            date: todayDate,
             views: 1,
             likes: 0,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            published: true
-          });
+            published: true,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+
+          // Save to 'posts' (Main DTW Collection)
+          await db.collection('posts').doc(newDocId).set(postData);
+
+          // Save to 'stories' as fallback backup
+          await db.collection('stories').doc(newDocId).set(postData);
 
           successCount++;
         } catch (e) {
@@ -438,7 +465,7 @@
         if (selectAll) selectAll.checked = false;
       } else {
         statusBox.className = 'status-box status-error';
-        statusBox.innerText = `பதிவேற்ற முடியவில்லை. Firestore அனுமதிகளைச் சரிபார்க்கவும்.`;
+        statusBox.innerText = `பதிவேற்ற முடியவில்லை. Firestore Rule அனுமதிகளைச் சரிபார்க்கவும்.`;
       }
     }
   </script>
