@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Story Sync Dashboard</title>
+  <title>Story Sync Automation Panel</title>
   
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -18,7 +18,7 @@
     }
 
     body {
-      background-color: #0f172a;
+      background-color: #0d1117;
       color: #e2e8f0;
       display: flex;
       justify-content: center;
@@ -29,11 +29,11 @@
     .container {
       width: 100%;
       max-width: 680px;
-      background: #1e293b;
+      background: #161b22;
       padding: 30px;
       border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-      border: 1px solid #334155;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+      border: 1px solid #30363d;
     }
 
     h1 {
@@ -42,7 +42,7 @@
       margin-bottom: 24px;
       color: #f8fafc;
       text-align: center;
-      border-bottom: 1px solid #334155;
+      border-bottom: 1px solid #30363d;
       padding-bottom: 15px;
     }
 
@@ -52,22 +52,21 @@
 
     label {
       display: block;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 600;
       margin-bottom: 6px;
-      color: #94a3b8;
+      color: #8b949e;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
     input[type="text"],
     input[type="url"],
-    input[type="password"],
-    select {
+    input[type="password"] {
       width: 100%;
       padding: 12px 14px;
-      background-color: #0f172a;
-      border: 1px solid #475569;
+      background-color: #0d1117;
+      border: 1px solid #30363d;
       border-radius: 6px;
       color: #fff;
       font-size: 0.95rem;
@@ -75,8 +74,8 @@
       transition: border-color 0.2s;
     }
 
-    input:focus, select:focus {
-      border-color: #38bdf8;
+    input:focus {
+      border-color: #58a6ff;
     }
 
     .row {
@@ -91,7 +90,7 @@
     button {
       width: 100%;
       padding: 12px;
-      background-color: #2563eb;
+      background-color: #238636;
       color: #fff;
       border: none;
       border-radius: 6px;
@@ -103,18 +102,27 @@
     }
 
     button:hover {
-      background-color: #1d4ed8;
+      background-color: #2ea043;
+    }
+
+    button.primary-btn {
+      background-color: #1f6feb;
+    }
+
+    button.primary-btn:hover {
+      background-color: #388bfd;
     }
 
     button:disabled {
-      background-color: #475569;
+      background-color: #30363d;
       cursor: not-allowed;
+      color: #8b949e;
     }
 
     .post-section {
       display: none;
       margin-top: 25px;
-      border-top: 1px solid #334155;
+      border-top: 1px solid #30363d;
       padding-top: 20px;
     }
 
@@ -132,7 +140,7 @@
 
     .select-all-box {
       font-size: 0.85rem;
-      color: #94a3b8;
+      color: #8b949e;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -142,8 +150,8 @@
     .post-list {
       max-height: 280px;
       overflow-y: auto;
-      background: #0f172a;
-      border: 1px solid #334155;
+      background: #0d1117;
+      border: 1px solid #30363d;
       border-radius: 6px;
       padding: 10px;
       margin-bottom: 20px;
@@ -154,7 +162,7 @@
       align-items: flex-start;
       gap: 10px;
       padding: 10px;
-      border-bottom: 1px solid #1e293b;
+      border-bottom: 1px solid #21262d;
     }
 
     .post-item:last-child {
@@ -179,14 +187,14 @@
 
     .post-meta {
       font-size: 0.75rem;
-      color: #64748b;
+      color: #8b949e;
       margin-top: 4px;
     }
 
     .badge {
       display: inline-block;
-      background: #334155;
-      color: #38bdf8;
+      background: #21262d;
+      color: #58a6ff;
       padding: 2px 6px;
       border-radius: 4px;
       font-size: 0.7rem;
@@ -203,21 +211,21 @@
     }
 
     .status-info {
-      background: #1e3a5f;
-      color: #93c5fd;
-      border: 1px solid #2563eb;
+      background: #0d2744;
+      color: #79c0ff;
+      border: 1px solid #1f6feb;
     }
 
     .status-success {
-      background: #14532d;
-      color: #86efac;
-      border: 1px solid #16a34a;
+      background: #0e331c;
+      color: #56d364;
+      border: 1px solid #238636;
     }
 
     .status-error {
-      background: #451a1a;
-      color: #fca5a5;
-      border: 1px solid #ef4444;
+      background: #3c1214;
+      color: #ff7b72;
+      border: 1px solid #f85149;
     }
   </style>
 </head>
@@ -232,13 +240,8 @@
     </div>
 
     <div class="form-group">
-      <label>2. Destination Category (Dark Tamil World)</label>
-      <select id="storyCategory">
-        <option value="காம கதைகள்">காம கதைகள்</option>
-        <option value="Pottachi Story">Pottachi Story</option>
-        <option value="Cuckold கதைகள்">Cuckold கதைகள்</option>
-        <option value="அம்மா மகன் Memes">அம்மா மகன் Memes</option>
-      </select>
+      <label>2. Destination Website (Your URL)</label>
+      <input type="url" id="destUrl" value="https://darktamilworld.vercel.app/">
     </div>
 
     <div class="row">
@@ -252,7 +255,7 @@
       </div>
     </div>
 
-    <button type="button" id="proceedBtn" onclick="fetchSourcePosts()">Proceed & Fetch Real Posts</button>
+    <button type="button" class="primary-btn" id="proceedBtn" onclick="fetchSourcePosts()">Proceed & Fetch Real Posts</button>
 
     <div id="statusBox" class="status-box"></div>
 
@@ -266,12 +269,11 @@
 
       <div class="post-list" id="postList"></div>
 
-      <button type="button" style="background-color: #16a34a;" id="publishBtn" onclick="publishSelectedPosts()">Publish Selected Posts to Dark Tamil World</button>
+      <button type="button" id="publishBtn" onclick="publishSelectedPosts()">Publish Instant Live to Public</button>
     </div>
   </div>
 
   <script>
-    // Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyC55PzXDzUPQdUNvx0qmG6ZgBE-tnRxSL0",
       authDomain: "darktamilworld.firebaseapp.com",
@@ -288,13 +290,57 @@
 
     let fetchedStories = [];
 
-    // Default thumbnails for stories
-    const sampleImages = [
-      "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80"
-    ];
+    // Helper: Generate First-Letter Dark AI Canvas Poster
+    function generateLetterArtCover(title) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 600;
+      canvas.height = 400;
+      const ctx = canvas.getContext('2d');
+
+      const bgGradients = [
+        ['#1e1b4b', '#0f172a', '#431407'],
+        ['#022c22', '#0f172a', '#134e4a'],
+        ['#311042', '#0f172a', '#581c87'],
+        ['#450a0a', '#0f172a', '#1c1917']
+      ];
+      const selectedTheme = bgGradients[Math.floor(Math.random() * bgGradients.length)];
+
+      const grad = ctx.createLinearGradient(0, 0, 600, 400);
+      grad.addColorStop(0, selectedTheme[0]);
+      grad.addColorStop(0.5, selectedTheme[1]);
+      grad.addColorStop(1, selectedTheme[2]);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 600, 400);
+
+      const radGrad = ctx.createRadialGradient(300, 200, 50, 300, 200, 300);
+      radGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      radGrad.addColorStop(1, 'rgba(0,0,0,0.7)');
+      ctx.fillStyle = radGrad;
+      ctx.fillRect(0, 0, 600, 400);
+
+      const cleanTitle = title.trim();
+      const firstChar = cleanTitle.charAt(0) || 'D';
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = 'bold 150px sans-serif';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.shadowColor = '#e11d48';
+      ctx.shadowBlur = 25;
+      ctx.fillText(firstChar, 300, 170);
+
+      ctx.shadowBlur = 0;
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillStyle = '#f8fafc';
+      let displayTitle = cleanTitle.length > 32 ? cleanTitle.substring(0, 30) + '...' : cleanTitle;
+      ctx.fillText(displayTitle, 300, 320);
+
+      ctx.font = '12px sans-serif';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('DARK TAMIL WORLD', 300, 360);
+
+      return canvas.toDataURL('image/jpeg', 0.85);
+    }
 
     async function fetchSourcePosts() {
       const sourceUrl = document.getElementById('sourceUrl').value.trim();
@@ -311,7 +357,7 @@
       proceedBtn.innerText = 'Connecting & Scraping...';
       statusBox.className = 'status-box status-info';
       statusBox.style.display = 'block';
-      statusBox.innerText = 'Fetching posts from source...';
+      statusBox.innerText = 'Fetching stories from source website...';
       postSection.style.display = 'none';
 
       try {
@@ -319,7 +365,7 @@
         const response = await fetch(apiUrl);
         
         if (!response.ok) {
-          throw new Error('Server request failed with status: ' + response.status);
+          throw new Error('Server request failed: ' + response.status);
         }
 
         const data = await response.json();
@@ -335,7 +381,7 @@
         renderPosts(fetchedStories);
         document.getElementById('postCount').innerText = fetchedStories.length;
         statusBox.className = 'status-box status-success';
-        statusBox.innerText = `Success! ${fetchedStories.length} posts retrieved. Select stories and click publish.`;
+        statusBox.innerText = `Success! ${fetchedStories.length} posts retrieved. Choose stories to publish live.`;
         postSection.style.display = 'block';
 
       } catch (err) {
@@ -359,8 +405,8 @@
           <div class="post-details">
             <div class="post-title">${post.title}</div>
             <div class="post-meta">
-              <span class="badge">${post.category}</span>
-              ${post.link ? `<a href="${post.link}" target="_blank" style="color: #60a5fa; text-decoration: none;">View Source Post</a>` : ''}
+              <span class="badge">${post.category || 'காம கதைகள்'}</span>
+              ${post.link ? `<a href="${post.link}" target="_blank" style="color: #58a6ff; text-decoration: none;">View Source</a>` : ''}
             </div>
           </div>
         `;
@@ -376,13 +422,11 @@
     async function publishSelectedPosts() {
       const adminUser = document.getElementById('adminUser').value.trim();
       const adminPass = document.getElementById('adminPass').value.trim();
-      const selectedCategory = document.getElementById('storyCategory').value;
       const statusBox = document.getElementById('statusBox');
       const publishBtn = document.getElementById('publishBtn');
 
-      // Admin verification
       if (adminUser !== "Prakash" || adminPass !== "Prakash9940@") {
-        alert("தவறான Admin Username அல்லது Password! சரியான விவரங்களை உள்ளிடவும்.");
+        alert("தவறான Admin விவரங்கள்! சரியான Username & Password தரவும்.");
         return;
       }
 
@@ -403,12 +447,11 @@
 
       for (let i = 0; i < storiesToPublish.length; i++) {
         const story = storiesToPublish[i];
-        statusBox.innerText = `[${i + 1}/${storiesToPublish.length}] Dark Tamil World-ல் பதிவேற்றுகிறது: ${story.title}...`;
+        statusBox.innerText = `[${i + 1}/${storiesToPublish.length}] Dark Tamil World-ல் லைவ் செய்கிறது: ${story.title}...`;
 
         try {
           let storyContent = story.content || '';
 
-          // If content is empty or short, fetch full content
           if (!storyContent || storyContent.length < 50) {
             const singleRes = await fetch(`/api/get-posts?url=${encodeURIComponent(story.link)}`);
             if (singleRes.ok) {
@@ -425,47 +468,70 @@
             storyContent = `<p>${story.title}</p>`;
           }
 
-          // Pick an image
-          const randomImage = sampleImages[i % sampleImages.length];
+          // Category auto-detection
+          let finalCategory = story.category && story.category !== 'Story' ? story.category.trim() : 'காம கதைகள்';
+
+          // First-letter AI Canvas cover image
+          const generatedCover = generateLetterArtCover(story.title);
+
           const newDocId = 'dtw_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
           const todayDate = new Date().toLocaleDateString('ta-IN', { year: 'numeric', month: 'short', day: 'numeric' });
 
+          // 100% Instant Public Live Flags
           const postData = {
             id: newDocId,
             title: story.title,
+            subtitle: story.title,
             content: storyContent,
-            category: selectedCategory,
-            coverImage: story.image || randomImage,
-            images: [story.image || randomImage],
+            category: finalCategory,
+            coverImage: generatedCover,
+            images: [generatedCover],
+            author: 'Prakash',
+            authorRole: 'Admin',
+            tags: `${finalCategory}, Tamil, Story`,
             date: todayDate,
             views: 1,
             likes: 0,
+            status: 'published',
+            approved: true,
             published: true,
+            visibility: 'public',
+            timestamp: Date.now(),
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
           };
 
-          // Save to 'posts' (Main DTW Collection)
+          // Save to 'posts' (Homepage Feed)
           await db.collection('posts').doc(newDocId).set(postData);
 
-          // Save to 'stories' as fallback backup
+          // Save to 'stories' (Reader Mode Feed)
           await db.collection('stories').doc(newDocId).set(postData);
+
+          // Category Auto-Registry
+          try {
+            await db.collection('categories').doc(finalCategory).set({
+              name: finalCategory,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+          } catch(catErr) {
+            console.log('Category auto-registered');
+          }
 
           successCount++;
         } catch (e) {
-          console.error("Story publish failed:", story.title, e);
+          console.error("Publishing error:", story.title, e);
         }
       }
 
       publishBtn.disabled = false;
       if (successCount > 0) {
         statusBox.className = 'status-box status-success';
-        statusBox.innerText = `வெற்றி! ${successCount} கதைகள் உங்கள் Dark Tamil World தளத்தில் முழுமையாகப் பதிவேற்றப்பட்டுவிட்டன!`;
+        statusBox.innerText = `வெற்றி! ${successCount} கதைகள் பப்ளிக் விசிட்டர்ஸுக்கு நேரடியாக உடனே லைவ் ஆகிவிட்டன!`;
         document.querySelectorAll('.post-checkbox').forEach(cb => cb.checked = false);
         const selectAll = document.getElementById('selectAll');
         if (selectAll) selectAll.checked = false;
       } else {
         statusBox.className = 'status-box status-error';
-        statusBox.innerText = `பதிவேற்ற முடியவில்லை. Firestore Rule அனுமதிகளைச் சரிபார்க்கவும்.`;
+        statusBox.innerText = `லைவ் செய்ய முடியவில்லை. Firestore அனுமதிகளைச் சரிபார்க்கவும்.`;
       }
     }
   </script>
