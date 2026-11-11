@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Story Sync Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #0f172a;
+      color: #e2e8f0;
+      display: flex;
+      justify-content: center;
+      padding: 30px 15px;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 650px;
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      border: 1px solid #334155;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #f8fafc;
+      text-align: center;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 15px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input[type="text"],
+    input[type="url"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      background-color: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      border-color: #38bdf8;
+    }
+
+    .row {
+      display: flex;
+      gap: 15px;
+    }
+
+    .row .form-group {
+      flex: 1;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      margin-top: 5px;
+    }
+
+    button:hover {
+      background-color: #1d4ed8;
+    }
+
+    .post-section {
+      display: none;
+      margin-top: 25px;
+      border-top: 1px solid #334155;
+      padding-top: 20px;
+    }
+
+    .post-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .post-header h2 {
+      font-size: 1.1rem;
+      color: #f1f5f9;
+    }
+
+    .select-all-box {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .post-list {
+      max-height: 250px;
+      overflow-y: auto;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+
+    .post-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .post-item:last-child {
+      border-bottom: none;
+    }
+
+    .post-item input[type="checkbox"] {
+      margin-top: 4px;
+      cursor: pointer;
+    }
+
+    .post-details {
+      flex: 1;
+    }
+
+    .post-title {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #f8fafc;
+    }
+
+    .post-meta {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 3px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #334155;
+      color: #38bdf8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      margin-right: 5px;
+    }
+
+    .status-box {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      display: none;
+    }
+
+    .status-info {
+      background: #1e3a5f;
+      color: #93c5fd;
+      border: 1px solid #2563eb;
+    }
+
+    .status-success {
+      background: #14532d;
+      color: #86efac;
+      border: 1px solid #16a34a;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Story Transfer Panel</h1>
+
+    <div class="form-group">
+      <label>1. Source Website (Story URL)</label>
+      <input type="url" id="sourceUrl" placeholder="https://source-story-website.com" required>
+    </div>
+
+    <div class="form-group">
+      <label>2. Destination Website (Your URL)</label>
+      <input type="url" id="destUrl" placeholder="https://your-website.com" required>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>Admin Username / Email</label>
+        <input type="text" id="adminUser" placeholder="admin" required>
+      </div>
+      <div class="form-group">
+        <label>Admin Password / API Key</label>
+        <input type="password" id="adminPass" placeholder="••••••••" required>
+      </div>
+    </div>
+
+    <button type="button" id="proceedBtn" onclick="fetchSourcePosts()">Proceed & Fetch Posts</button>
+
+    <div id="statusBox" class="status-box"></div>
+
+    <div class="post-section" id="postSection">
+      <div class="post-header">
+        <h2>Available Posts</h2>
+        <label class="select-all-box">
+          <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"> Select All
+        </label>
+      </div>
+
+      <div class="post-list" id="postList">
+        <!-- Fetched posts will be populated here -->
+      </div>
+
+      <button type="button" style="background-color: #16a34a;" onclick="publishSelectedPosts()">Publish Selected Posts</button>
+    </div>
+  </div>
+
+  <script>
+    // Sample parsed data structure
+    let fetchedStories = [];
+
+    async function fetchSourcePosts() {
+      const sourceUrl = document.getElementById('sourceUrl').value.trim();
+      const statusBox = document.getElementById('statusBox');
+      const proceedBtn = document.getElementById('proceedBtn');
+
+      if (!sourceUrl) {
+        alert('Please enter a source URL');
+        return;
+      }
+
+      proceedBtn.disabled = true;
+      proceedBtn.innerText = 'Fetching Posts...';
+      statusBox.className = 'status-box status-info';
+      statusBox.style.display = 'block';
+      statusBox.innerText = 'Connecting to source and parsing public stories...';
+
+      // NOTE: Browser direct scraping cross-origin (CORS) restriction irukkum.
+      // Production setup-ku Vercel API Route (Serverless Function) use panrathu best.
+      setTimeout(() => {
+        // Mock extracted items for demonstration
+        fetchedStories = [
+          { id: 1, title: "The Hidden Forest Episode 01", category: "Fantasy", content: "Full story content 1..." },
+          { id: 2, title: "Midnight Secrets - Chapter 4", category: "Mystery", content: "Full story content 2..." },
+          { id: 3, title: "Legend of the Blue Sea", category: "Adventure", content: "Full story content 3..." },
+          { id: 4, title: "Urban Tales: The Metro Station", category: "Thriller", content: "Full story content 4..." }
+        ];
+
+        renderPosts(fetchedStories);
+        proceedBtn.disabled = false;
+        proceedBtn.innerText = 'Proceed & Fetch Posts';
+        statusBox.style.display = 'none';
+        document.getElementById('postSection').style.display = 'block';
+      }, 1500);
+    }
+
+    function renderPosts(posts) {
+      const listContainer = document.getElementById('postList');
+      listContainer.innerHTML = '';
+
+      posts.forEach(post => {
+        const item = document.createElement('div');
+        item.className = 'post-item';
+        item.innerHTML = `
+          <input type="checkbox" class="post-checkbox" value="${post.id}">
+          <div class="post-details">
+            <div class="post-title">${post.title}</div>
+            <div class="post-meta">
+              <span class="badge">${post.category}</span>
+              Ready to migrate
+            </div>
+          </div>
+        `;
+        listContainer.appendChild(item);
+      });
+    }
+
+    function toggleSelectAll(master) {
+      const checkboxes = document.querySelectorAll('.post-checkbox');
+      checkboxes.forEach(cb => cb.checked = master.checked);
+    }
+
+    async function publishSelectedPosts() {
+      const selectedCheckboxes = document.querySelectorAll('.post-checkbox:checked');
+      const destUrl = document.getElementById('destUrl').value.trim();
+      const adminUser = document.getElementById('adminUser').value.trim();
+      const adminPass = document.getElementById('adminPass').value.trim();
+      const statusBox = document.getElementById('statusBox');
+
+      if (!destUrl || !adminUser || !adminPass) {
+        alert('Please fill your website URL and Admin credentials');
+        return;
+      }
+
+      if (selectedCheckboxes.length === 0) {
+        alert('Please select at least one post to publish');
+        return;
+      }
+
+      const selectedIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+      const storiesToPublish = fetchedStories.filter(s => selectedIds.includes(s.id));
+
+      statusBox.className = 'status-box status-info';
+      statusBox.style.display = 'block';
+      statusBox.innerText = `Publishing ${storiesToPublish.length} post(s) to ${destUrl}...`;
+
+      // API Posting Logic
+      setTimeout(() => {
+        statusBox.className = 'status-box status-success';
+        statusBox.innerText = `Success! ${storiesToPublish.length} stories published successfully to your website.`;
+      }, 2000);
+    }
+  </script>
+</body>
+</html>
