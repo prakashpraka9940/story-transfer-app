@@ -23,7 +23,7 @@
 
     .container {
       width: 100%;
-      max-width: 650px;
+      max-width: 680px;
       background: #1e293b;
       padding: 30px;
       border-radius: 12px;
@@ -32,7 +32,7 @@
     }
 
     h1 {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: 700;
       margin-bottom: 24px;
       color: #f8fafc;
@@ -100,6 +100,11 @@
       background-color: #1d4ed8;
     }
 
+    button:disabled {
+      background-color: #475569;
+      cursor: not-allowed;
+    }
+
     .post-section {
       display: none;
       margin-top: 25px;
@@ -129,7 +134,7 @@
     }
 
     .post-list {
-      max-height: 250px;
+      max-height: 280px;
       overflow-y: auto;
       background: #0f172a;
       border: 1px solid #334155;
@@ -160,15 +165,16 @@
     }
 
     .post-title {
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 500;
       color: #f8fafc;
+      word-break: break-word;
     }
 
     .post-meta {
       font-size: 0.75rem;
       color: #64748b;
-      margin-top: 3px;
+      margin-top: 4px;
     }
 
     .badge {
@@ -187,6 +193,7 @@
       border-radius: 6px;
       font-size: 0.85rem;
       display: none;
+      word-break: break-word;
     }
 
     .status-info {
@@ -200,6 +207,12 @@
       color: #86efac;
       border: 1px solid #16a34a;
     }
+
+    .status-error {
+      background: #451a1a;
+      color: #fca5a5;
+      border: 1px solid #ef4444;
+    }
   </style>
 </head>
 <body>
@@ -209,82 +222,133 @@
 
     <div class="form-group">
       <label>1. Source Website (Story URL)</label>
-      <input type="url" id="sourceUrl" placeholder="https://source-story-website.com" required>
+      <input type="url" id="sourceUrl" placeholder="https://example.com" value="https://tamilsexstories.info/">
     </div>
 
     <div class="form-group">
       <label>2. Destination Website (Your URL)</label>
-      <input type="url" id="destUrl" placeholder="https://your-website.com" required>
+      <input type="url" id="destUrl" placeholder="https://your-site.vercel.app" value="https://darktamilworld.vercel.app/">
     </div>
 
     <div class="row">
       <div class="form-group">
         <label>Admin Username / Email</label>
-        <input type="text" id="adminUser" placeholder="admin" required>
+        <input type="text" id="adminUser" placeholder="admin">
       </div>
       <div class="form-group">
         <label>Admin Password / API Key</label>
-        <input type="password" id="adminPass" placeholder="••••••••" required>
+        <input type="password" id="adminPass" placeholder="••••••••">
       </div>
     </div>
 
-    <button type="button" id="proceedBtn" onclick="fetchSourcePosts()">Proceed & Fetch Posts</button>
+    <button type="button" id="proceedBtn" onclick="fetchSourcePosts()">Proceed & Fetch Real Posts</button>
 
     <div id="statusBox" class="status-box"></div>
 
     <div class="post-section" id="postSection">
       <div class="post-header">
-        <h2>Available Posts</h2>
+        <h2>Available Posts (<span id="postCount">0</span>)</h2>
         <label class="select-all-box">
           <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"> Select All
         </label>
       </div>
 
-      <div class="post-list" id="postList">
-        <!-- Fetched posts will be populated here -->
-      </div>
+      <div class="post-list" id="postList"></div>
 
-      <button type="button" style="background-color: #16a34a;" onclick="publishSelectedPosts()">Publish Selected Posts</button>
+      <button type="button" style="background-color: #16a34a;" id="publishBtn" onclick="publishSelectedPosts()">Publish Selected Posts</button>
     </div>
   </div>
 
   <script>
-    // Sample parsed data structure
     let fetchedStories = [];
 
     async function fetchSourcePosts() {
       const sourceUrl = document.getElementById('sourceUrl').value.trim();
       const statusBox = document.getElementById('statusBox');
       const proceedBtn = document.getElementById('proceedBtn');
+      const postSection = document.getElementById('postSection');
 
       if (!sourceUrl) {
-        alert('Please enter a source URL');
+        alert('Please enter a valid source URL');
         return;
       }
 
       proceedBtn.disabled = true;
-      proceedBtn.innerText = 'Fetching Posts...';
+      proceedBtn.innerText = 'Connecting & Scraping...';
       statusBox.className = 'status-box status-info';
       statusBox.style.display = 'block';
-      statusBox.innerText = 'Connecting to source and parsing public stories...';
+      statusBox.innerText = `Connecting to ${sourceUrl} via proxy scraper...`;
+      postSection.style.display = 'none';
 
-      // NOTE: Browser direct scraping cross-origin (CORS) restriction irukkum.
-      // Production setup-ku Vercel API Route (Serverless Function) use panrathu best.
-      setTimeout(() => {
-        // Mock extracted items for demonstration
-        fetchedStories = [
-          { id: 1, title: "The Hidden Forest Episode 01", category: "Fantasy", content: "Full story content 1..." },
-          { id: 2, title: "Midnight Secrets - Chapter 4", category: "Mystery", content: "Full story content 2..." },
-          { id: 3, title: "Legend of the Blue Sea", category: "Adventure", content: "Full story content 3..." },
-          { id: 4, title: "Urban Tales: The Metro Station", category: "Thriller", content: "Full story content 4..." }
-        ];
+      try {
+        // Free proxy service use panni source site HTML edukkurom
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(sourceUrl)}`;
+        const response = await fetch(proxyUrl);
+        
+        if (!response.ok) {
+          throw new Error('Proxy connection failed');
+        }
+
+        const data = await response.json();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(data.contents, 'text/html');
+
+        // WordPress / Blog posts selectors
+        let postNodes = doc.querySelectorAll('article, .post, .entry-title a, h2.entry-title a, h2 a');
+        fetchedStories = [];
+
+        let seenTitles = new Set();
+        let counter = 1;
+
+        postNodes.forEach((node) => {
+          let title = '';
+          let link = '';
+          let category = 'Story';
+
+          if (node.tagName.toLowerCase() === 'a') {
+            title = node.innerText.trim();
+            link = node.getAttribute('href') || '';
+          } else {
+            const linkElem = node.querySelector('h2 a, h1 a, a');
+            if (linkElem) {
+              title = linkElem.innerText.trim();
+              link = linkElem.getAttribute('href') || '';
+            } else {
+              title = node.innerText.trim();
+            }
+
+            const catElem = node.querySelector('.cat-links, .category, .post-category');
+            if (catElem) category = catElem.innerText.trim();
+          }
+
+          if (title && title.length > 5 && !seenTitles.has(title)) {
+            seenTitles.add(title);
+            fetchedStories.push({
+              id: counter++,
+              title: title,
+              link: link,
+              category: category
+            });
+          }
+        });
+
+        if (fetchedStories.length === 0) {
+          throw new Error('Posts parse aagavillai. Source site protection irukkalaam.');
+        }
 
         renderPosts(fetchedStories);
+        document.getElementById('postCount').innerText = fetchedStories.length;
+        statusBox.className = 'status-box status-success';
+        statusBox.innerText = `Success! ${fetchedStories.length} real posts source site-la irunthu kidaithathu.`;
+        postSection.style.display = 'block';
+
+      } catch (err) {
+        statusBox.className = 'status-box status-error';
+        statusBox.innerText = `Error: ${err.message}. Source site direct scraper-ah block pannirukku.`;
+      } finally {
         proceedBtn.disabled = false;
-        proceedBtn.innerText = 'Proceed & Fetch Posts';
-        statusBox.style.display = 'none';
-        document.getElementById('postSection').style.display = 'block';
-      }, 1500);
+        proceedBtn.innerText = 'Proceed & Fetch Real Posts';
+      }
     }
 
     function renderPosts(posts) {
@@ -300,7 +364,7 @@
             <div class="post-title">${post.title}</div>
             <div class="post-meta">
               <span class="badge">${post.category}</span>
-              Ready to migrate
+              ${post.link ? `<a href="${post.link}" target="_blank" style="color: #60a5fa; text-decoration: none;">View Source Post</a>` : ''}
             </div>
           </div>
         `;
@@ -321,12 +385,12 @@
       const statusBox = document.getElementById('statusBox');
 
       if (!destUrl || !adminUser || !adminPass) {
-        alert('Please fill your website URL and Admin credentials');
+        alert('Please enter Destination URL and Admin Credentials');
         return;
       }
 
       if (selectedCheckboxes.length === 0) {
-        alert('Please select at least one post to publish');
+        alert('Ethaavathu oru post-ai select pannunga');
         return;
       }
 
@@ -335,13 +399,30 @@
 
       statusBox.className = 'status-box status-info';
       statusBox.style.display = 'block';
-      statusBox.innerText = `Publishing ${storiesToPublish.length} post(s) to ${destUrl}...`;
+      statusBox.innerText = `Publishing ${storiesToPublish.length} stories to ${destUrl}...`;
 
-      // API Posting Logic
-      setTimeout(() => {
-        statusBox.className = 'status-box status-success';
-        statusBox.innerText = `Success! ${storiesToPublish.length} stories published successfully to your website.`;
-      }, 2000);
+      try {
+        // Destination Vercel API-kku POST request anupuvatharkana logic
+        const response = await fetch(`${destUrl.replace(/\/$/, '')}/api/posts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+          },
+          body: JSON.stringify({ posts: storiesToPublish })
+        });
+
+        if (response.ok) {
+          statusBox.className = 'status-box status-success';
+          statusBox.innerText = `Success! ${storiesToPublish.length} stories ungalathu website-il post aagivittadhu!`;
+        } else {
+          statusBox.className = 'status-box status-info';
+          statusBox.innerText = `Stories ready! Destination site-il (/api/posts) endpoint verify seiya vendum. Selected: ${storiesToPublish.length}`;
+        }
+      } catch (e) {
+        statusBox.className = 'status-box status-info';
+        statusBox.innerText = `Stories ready! (${storiesToPublish.length} selected). Destination site API route configure aana piragu direct-aa save aagidum.`;
+      }
     }
   </script>
 </body>
